@@ -78,8 +78,8 @@ include 'includes/db_connect.php';
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // URL API — замените на URL вашего Render-сервиса после деплоя
-        const API_URL = 'https://vkusnyjugolok.onrender.com'
+        // API на том же сервере через nginx proxy
+        const API_URL = '/api/recommend';
 
         const chatMessages = document.getElementById('chatMessages');
         const chatForm = document.getElementById('chatForm');

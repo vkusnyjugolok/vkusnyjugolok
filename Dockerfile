@@ -1,19 +1,33 @@
-FROM python:3.11-slim
+FROM php:8.2-fpm-bookworm
 
-WORKDIR /app
+# Установка nginx, Python, supervisor и зависимостей
+RUN apt-get update && apt-get install -y \
+    nginx \
+    python3 \
+    python3-pip \
+    python3-venv \
+    supervisor \
+    && docker-php-ext-install pdo pdo_mysql mysqli \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Копируем зависимости и устанавливаем
-COPY api/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Python venv и зависимости
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+COPY api/requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-# Копируем код API
-COPY api/app.py .
+# Копируем PHP-сайт
+COPY . /var/www/html/
+RUN chown -R www-data:www-data /var/www/html
 
-# Переменные окружения (переопределяются в Render)
-ENV PORT=5000
+# Копируем конфиги
+COPY nginx.conf /etc/nginx/sites-available/default
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Переменные окружения
 ENV HF_TOKEN=""
 ENV HF_MODEL="mistralai/Mistral-7B-Instruct-v0.3"
 
-EXPOSE ${PORT}
+EXPOSE 10000
 
-CMD gunicorn app:app --bind 0.0.0.0:${PORT} --workers 2 --timeout 120
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
