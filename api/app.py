@@ -105,7 +105,7 @@ def recommend():
         ]
 
         # Пробуем модели по очереди
-        models_to_try = [HF_MODEL] + [m for m in CHAT_MODELS if m != HF_MODEL]
+        models_to_try = [HF_MODEL] 
         response_text = None
         last_error = None
 
@@ -181,13 +181,9 @@ def health():
     token = HF_TOKEN if HF_TOKEN else None
     status = {"status": "ok", "hf_model": HF_MODEL, "hf_token_set": bool(HF_TOKEN), "db_host_set": bool(DB_HOST)}
     # Проверяем каждую модель
-    for model in CHAT_MODELS:
-        try:
-            client = InferenceClient(model=model, token=token)
-            client.chat_completion(messages=[{"role": "user", "content": "Привет"}], max_tokens=10)
-            status[f"model_{model}"] = "ok"
-        except Exception as e:
-            status[f"model_{model}"] = f"error: {str(e)}"
+    client = InferenceClient(model=HF_MODEL, token=token)
+    client.chat_completion(messages=[{"role": "user", "content": "Привет"}], max_tokens=10)
+    status[HF_MODEL] = "ok"
     return jsonify(status)
 
 
