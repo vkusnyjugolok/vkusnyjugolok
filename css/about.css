@@ -1,0 +1,77 @@
+/* ======= Общий стиль ======= */
+body {
+    background-color: #f8f5f2;
+    font-family: 'Playfair Display', serif;
+    color: #4b3832;
+    line-height: 1.6;
+}
+
+/* Hero-блок */
+.hero-about {
+    background: url('../img/about-hero.jpg') center/cover no-repeat;
+    min-height: 300px;
+    position: relative;
+}
+.hero-about::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+}
+.hero-about .hero-content {
+    position: relative;
+    z-index: 2;
+}
+
+/* Заголовки */
+h1, h3 {
+    color: #a0522d;
+    font-weight: 700;
+}
+h1 {
+    color: #fff;
+}
+h3 {
+    margin-top: 2rem;
+}
+
+/* Список ценностей */
+ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+ul li {
+    position: relative;
+    padding-left: 25px;
+    margin-bottom: 0.5rem;
+}
+ul li::before {
+    content: "☕";
+    position: absolute;
+    left: 0;
+    color: #a0522d;
+}
+
+/* Фото */
+.img-fluid {
+    border-radius: 15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+.img-fluid:hover {
+    transform: scale(1.02);
+}
+
+/* ======= Прижимаем футер ======= */
+.page-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+.flex-grow-1 {
+    flex: 1;
+}
+
+.hero-about {
+    background: url('../img/glav.jpg') center/cover no-repeat;
+}

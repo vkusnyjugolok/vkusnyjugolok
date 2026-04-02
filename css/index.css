@@ -1,0 +1,148 @@
+body {
+    background: linear-gradient(135deg, #fffbe6 0%, #ffe4c4 100%);
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    color: #4e342e;
+}
+
+h2 {
+    color: #a0522d;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 1.5rem;
+}
+
+section {
+    background: rgba(255,255,255,0.85);
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(160,82,45,0.08);
+    padding: 2rem 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.card {
+    border: none;
+    border-radius: 20px;
+    overflow: hidden;
+    background: #fffaf3;
+    box-shadow: 0 4px 20px rgba(160, 82, 45, 0.12);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 8px 28px rgba(160, 82, 45, 0.2);
+}
+
+.card-img-top {
+    height: 220px;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+
+.card:hover .card-img-top {
+    transform: scale(1.05);
+}
+
+.card-title {
+    color: #a0522d;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.card-text {
+    color: #6d4c41;
+}
+
+.btn-primary, .btn-outline-primary {
+    background-color: #a0522d;
+    border-color: #a0522d;
+    color: #fff;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: background 0.2s, border 0.2s;
+}
+.btn-primary:hover, .btn-outline-primary:hover {
+    background-color: #8b4513;
+    border-color: #8b4513;
+    color: #fff;
+}
+
+/* Кнопка в фирменном стиле */
+.btn-coffee {
+    background-color: #a0522d;
+    border: none;
+    color: #fff;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.btn-coffee:hover {
+    background-color: #8b4513; /* Темнее при наведении */
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+/* Контурная кнопка */
+.btn-outline-coffee {
+    background-color: transparent;
+    border: 2px solid #a0522d;
+    color: #a0522d;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.3s ease, transform 0.2s ease;
+}
+
+.btn-outline-coffee:hover {
+    background-color: #a0522d; /* Заливается при наведении */
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+/* Ссылки в кофейном стиле */
+.link-coffee {
+    color: #a0522d;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.link-coffee:hover {
+    color: #8b4513;
+}
+
+
+footer {
+    background: #fffaf3;
+    color: #a0522d;
+    border-top: 1px solid #ffe4c4;
+    padding: 1.5rem 0;
+    font-size: 1rem;
+    margin-top: 2rem;
+}
+
+.navbar {
+    background: #fffaf3 !important;
+    box-shadow: 0 2px 8px rgba(160,82,45,0.07);
+}
+.navbar-brand {
+    color: #a0522d !important;
+    font-weight: 700;
+    font-size: 1.3rem;
+}
+.nav-link {
+    color: #6d4c41 !important;
+    font-weight: 500;
+    margin-right: 1rem;
+}
+.nav-link:hover {
+    color: #a0522d !important;
+}
+
+@media (max-width: 768px) {
+    section {
+        padding: 1rem 0.5rem;
+    }
+    .card-img-top {
+        height: 140px;
+    }
+}

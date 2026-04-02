@@ -1,0 +1,137 @@
+body {
+    background-color: #fffaf3;
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    color: #4e342e;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 40px auto;
+    padding: 20px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(160, 82, 45, 0.1);
+}
+
+h2 {
+    font-size: 2rem;
+    margin-bottom: 30px;
+    color: #a0522d;
+    text-align: center;
+}
+
+.review-card {
+    border: 1px solid #ffe4c4;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    background-color: #fffaf3;
+    transition: box-shadow 0.3s ease;
+}
+
+.review-card:hover {
+    box-shadow: 0 4px 14px rgba(160, 82, 45, 0.15);
+}
+
+.review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.review-name {
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: #8b4513;
+}
+
+.review-rating {
+    color: #ffc107;
+    font-size: 1rem;
+}
+
+.review-message {
+    font-size: 1rem;
+    margin-bottom: 10px;
+    color: #6d4c41;
+}
+
+.review-status {
+    display: inline-block;
+    padding: 3px 10px;
+    font-size: 0.85rem;
+    border-radius: 20px;
+    font-weight: 500;
+}
+
+.status-approved {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-pending {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status-rejected {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.btn-group {
+    margin-top: 10px;
+}
+
+.btn {
+    border: none;
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    border-radius: 6px;
+    margin-right: 8px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.btn-approve {
+    background-color: #28a745;
+    color: white;
+}
+.btn-approve:hover {
+    background-color: #218838;
+}
+
+.btn-reject {
+    background-color: #ffc107;
+    color: black;
+}
+.btn-reject:hover {
+    background-color: #e0a800;
+}
+
+.btn-delete {
+    background-color: #dc3545;
+    color: white;
+}
+.btn-delete:hover {
+    background-color: #c82333;
+}
+
+@media (max-width: 768px) {
+    .review-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .btn-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .btn-group .btn {
+        margin-bottom: 8px;
+    }
+}

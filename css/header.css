@@ -1,0 +1,44 @@
+/* ======= Стили для шапки сайта ======= */
+
+/* Общий контейнер */
+.site-header {
+    background: linear-gradient(135deg, #8b5a2b, #a0522d);
+    color: #fff;
+    font-family: 'Playfair Display', serif;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+/* Заголовок */
+.site-title {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+/* Навигация */
+.navbar {
+    background-color: #fff; /* фон навигации всегда одинаковый */
+    padding: 0.5rem 0;
+}
+
+.nav-link {
+    color: #a0522d !important; /* кофейный цвет */
+    font-weight: 500;
+    margin: 0 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+    background-color: #a0522d; /* фон при наведении */
+    color: #fff !important;   /* белый текст */
+}
+
+/* Мобильная кнопка меню */
+.navbar-toggler {
+    border-color: rgba(255,255,255,0.3);
+}
+
+.navbar-toggler-icon {
+    filter: invert(1);
+}

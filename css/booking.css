@@ -1,0 +1,64 @@
+/* Фон секции и центрирование формы */
+.booking-section {
+    background: rgba(255, 250, 243, 0.85);
+    border-radius: 20px;
+    padding: 2rem 1.5rem;
+    margin-bottom: 2rem;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    box-shadow: 0 4px 24px rgba(160, 82, 45, 0.08);
+}
+
+.booking-section h2 {
+    color: #a0522d;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+/* Форма */
+.booking-form .form-control {
+    border-radius: 10px;
+    border: 1px solid #d2b48c;
+    padding: 0.5rem 0.75rem;
+    transition: border-color 0.3s;
+}
+
+.booking-form .form-control:focus {
+    border-color: #a0522d;
+    box-shadow: 0 0 8px rgba(160, 82, 45, 0.3);
+}
+
+.booking-form label {
+    font-weight: 500;
+    color: #6d4c41;
+}
+
+/* Кнопка */
+.booking-form .btn-coffee {
+    font-weight: 600;
+    padding: 0.75rem;
+    font-size: 1.05rem;
+    transition: all 0.3s;
+}
+
+.booking-form .btn-coffee:hover {
+    background-color: #8b4513;
+    transform: translateY(-2px);
+}
+
+/* Сообщение об успешном бронировании */
+.text-success {
+    text-align: center;
+    font-weight: 600;
+    color: #3c763d;
+    margin-bottom: 1rem;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .booking-section {
+        padding: 1.5rem 1rem;
+    }
+}

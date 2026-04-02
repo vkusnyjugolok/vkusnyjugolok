@@ -1,0 +1,18 @@
+body {
+    background-color: #f4f4f4;
+}
+
+.table {
+    background-color: white;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+}
+
+form {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
