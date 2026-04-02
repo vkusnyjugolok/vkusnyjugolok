@@ -104,30 +104,15 @@ def recommend():
             {"role": "user", "content": user_message}
         ]
 
-        # Пробуем модели по очереди
-        models_to_try = [HF_MODEL] 
-        response_text = None
-        last_error = None
-
-        for model in models_to_try:
-            try:
-                print(f"Пробуем модель: {model}")
-                client = InferenceClient(model=model, token=token)
-                response = client.chat_completion(
-                    messages=messages,
-                    max_tokens=512,
-                    temperature=0.7,
-                )
-                response_text = response.choices[0].message.content.strip()
-                print(f"HF ответ ({model}): {response_text}")
-                break
-            except Exception as model_err:
-                last_error = model_err
-                print(f"Модель {model} не сработала: {model_err}")
-                continue
-
-        if response_text is None:
-            raise last_error or Exception("Все модели недоступны")
+        print(f"Используем модель: {HF_MODEL}")
+        client = InferenceClient(model=HF_MODEL, token=token)
+        response = client.chat_completion(
+            messages=messages,
+            max_tokens=512,
+            temperature=0.7,
+        )
+        response_text = response.choices[0].message.content.strip()
+        print(f"HF ответ: {response_text}")
 
         # Извлекаем ID рекомендованных блюд из ответа
         recommended_ids = []
