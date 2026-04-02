@@ -8,7 +8,8 @@ RUN apt-get update && apt-get install -y \
     python3-venv \
     supervisor \
     && docker-php-ext-install pdo pdo_mysql mysqli \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    && apt-get clean && rm -rf /var/lib/apt/lists/* \
+    && echo "clear_env = no" >> /usr/local/etc/php-fpm.d/www.conf
 
 # Python venv и зависимости
 RUN python3 -m venv /opt/venv

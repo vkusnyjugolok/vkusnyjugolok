@@ -107,7 +107,7 @@ CREATE TABLE `reviews` (
   `message` text NOT NULL,
   `rating` int(11) NOT NULL,
   `status` enum('pending','approved','rejected') DEFAULT 'pending',
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
   `approved` tinyint(1) DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 

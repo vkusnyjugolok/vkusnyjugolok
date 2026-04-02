@@ -1,6 +1,5 @@
 import os
 import json
-import mysql.connector
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from huggingface_hub import InferenceClient
@@ -12,40 +11,50 @@ CORS(app)
 HF_TOKEN = os.environ.get("HF_TOKEN", "")
 HF_MODEL = os.environ.get("HF_MODEL", "mistralai/Mistral-7B-Instruct-v0.3")
 
-# MySQL настройки (из переменных окружения или дефолтные)
-DB_HOST = os.environ.get("DB_HOST", "sql310.infinityfree.com")
-DB_NAME = os.environ.get("DB_NAME", "if0_40780426_vkusnyjugolok")
-DB_USER = os.environ.get("DB_USER", "if0_40780426")
-DB_PASS = os.environ.get("DB_PASS", "SxEf8ruMFVF")
+# MySQL настройки (из переменных окружения)
+DB_HOST = os.environ.get("DB_HOST", "")
+DB_NAME = os.environ.get("DB_NAME", "")
+DB_USER = os.environ.get("DB_USER", "")
+DB_PASS = os.environ.get("DB_PASS", "")
+
+# Локальное меню (fallback, если БД недоступна)
+FALLBACK_MENU = [
+    {"id": 1, "name": "Паста Карбонара", "description": "Классическая итальянская паста с беконом и сливочным соусом", "price": 450.0, "category": "Основные блюда", "image": "uploads/689b3dbec371c.jpg"},
+    {"id": 2, "name": "Тирамису", "description": "Нежный десерт с маскарпоне и кофе", "price": 250.0, "category": "Десерты", "image": "uploads/689b3e008a93d.jpg"},
+    {"id": 3, "name": "Латте", "description": "Кофе с молоком и пышной пенкой", "price": 150.0, "category": "Напитки", "image": ""},
+    {"id": 4, "name": "Цезарь с курицей", "description": "Салат с курицей, пармезаном и сухариками", "price": 350.0, "category": "Салаты", "image": ""},
+    {"id": 5, "name": "Бутерброд", "description": "Вкусный бутерброд", "price": 150.0, "category": "Основные блюда", "image": ""},
+]
 
 
-def get_db_connection():
-    return mysql.connector.connect(
-        host=DB_HOST,
-        database=DB_NAME,
-        user=DB_USER,
-        password=DB_PASS,
-        charset="utf8"
-    )
-
-
-def get_menu_items():
-    """Получает все блюда из базы данных."""
+def get_menu_from_db():
+    """Пытается получить меню из MySQL. Возвращает None при ошибке."""
+    if not DB_HOST:
+        return None
     try:
-        conn = get_db_connection()
+        import mysql.connector
+        conn = mysql.connector.connect(
+            host=DB_HOST, database=DB_NAME,
+            user=DB_USER, password=DB_PASS, charset="utf8"
+        )
         cursor = conn.cursor(dictionary=True)
         cursor.execute("SELECT id, name, description, price, category, image FROM menu")
         items = cursor.fetchall()
         cursor.close()
         conn.close()
-        # Конвертируем Decimal в float для JSON
         for item in items:
             if item.get("price"):
                 item["price"] = float(item["price"])
-        return items
+        return items if items else None
     except Exception as e:
-        print(f"Ошибка подключения к БД: {e}")
-        return []
+        print(f"БД недоступна, используем локальное меню: {e}")
+        return None
+
+
+def get_menu_items():
+    """Получает меню: сначала из БД, fallback — локальный список."""
+    db_menu = get_menu_from_db()
+    return db_menu if db_menu else FALLBACK_MENU
 
 
 def build_prompt(user_message, menu_items):
@@ -53,7 +62,7 @@ def build_prompt(user_message, menu_items):
     menu_text = ""
     for item in menu_items:
         menu_text += (
-            f"- {item['name']} ({item['category']}): "
+            f"- ID:{item['id']} {item['name']} ({item['category']}): "
             f"{item['description']} — {item['price']} руб.\n"
         )
 
@@ -68,7 +77,7 @@ def build_prompt(user_message, menu_items):
 3. Отвечай на русском языке, дружелюбно и кратко.
 4. Для каждого рекомендованного блюда укажи название, цену и почему оно подходит.
 5. Если ни одно блюдо не подходит, честно скажи об этом.
-6. Верни ответ в формате JSON:
+6. Верни ответ СТРОГО в формате JSON без дополнительного текста:
 {{
   "message": "Текст ответа для пользователя с рекомендациями",
   "recommended_ids": [1, 2]
@@ -89,13 +98,8 @@ def recommend():
     if not user_message:
         return jsonify({"error": "Сообщение не может быть пустым"}), 400
 
-    # Получаем меню из БД
+    # Получаем меню
     menu_items = get_menu_items()
-    if not menu_items:
-        return jsonify({
-            "message": "К сожалению, не удалось загрузить меню. Попробуйте позже.",
-            "recommendations": []
-        })
 
     # Формируем промпт и отправляем в HuggingFace
     prompt = build_prompt(user_message, menu_items)
@@ -115,9 +119,7 @@ def recommend():
         recommended_ids = []
         message = response_text
 
-        # Пытаемся распарсить JSON из ответа модели
         try:
-            # Ищем JSON в ответе
             json_start = response_text.find("{")
             json_end = response_text.rfind("}") + 1
             if json_start != -1 and json_end > json_start:
@@ -126,14 +128,10 @@ def recommend():
                 message = parsed.get("message", response_text)
                 recommended_ids = parsed.get("recommended_ids", [])
         except (json.JSONDecodeError, ValueError):
-            # Если не удалось распарсить JSON, используем весь текст
             message = response_text
 
         # Фильтруем рекомендованные блюда
-        recommendations = []
-        for item in menu_items:
-            if item["id"] in recommended_ids:
-                recommendations.append(item)
+        recommendations = [item for item in menu_items if item["id"] in recommended_ids]
 
         return jsonify({
             "message": message,
