@@ -35,7 +35,7 @@ while ($dish = $stmt->fetch()) {
                                     <h5 class="card-title"><?php echo htmlspecialchars($dish['name']); ?></h5>
                                     <p class="card-text"><?php echo htmlspecialchars($dish['description']); ?></p>
                                     <p class="card-text fw-semibold">Цена: <?php echo htmlspecialchars($dish['price']); ?> ₽</p>
-                                    <a href="booking.php" class="btn btn-coffee w-100">Заказать</a>
+
                                 </div>
                             </div>
                         </div>

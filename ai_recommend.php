@@ -119,7 +119,7 @@ include 'includes/db_connect.php';
                 const imgSrc = item.image || 'https://via.placeholder.com/300x200?text=Блюдо';
                 const price = parseFloat(item.price).toLocaleString('ru-RU');
                 div.innerHTML += `
-                    <div class="rec-card">
+                    <a href="menu.php" class="rec-card">
                         <img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(item.name)}" class="rec-img">
                         <div class="rec-body">
                             <h6 class="rec-title">${escapeHtml(item.name)}</h6>
@@ -129,7 +129,7 @@ include 'includes/db_connect.php';
                                 <span class="badge bg-coffee-cat">${escapeHtml(item.category || '')}</span>
                             </div>
                         </div>
-                    </div>
+                    </a>
                 `;
             });
 
