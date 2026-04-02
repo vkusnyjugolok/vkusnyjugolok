@@ -19,7 +19,11 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Копируем PHP-сайт
 COPY . /var/www/html/
-RUN chown -R www-data:www-data /var/www/html
+RUN mkdir -p /var/www/html/uploads \
+    && chown -R www-data:www-data /var/www/html \
+    && chmod 777 /var/www/html/uploads \
+    && echo "upload_max_filesize = 10M" > /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "post_max_size = 10M" >> /usr/local/etc/php/conf.d/uploads.ini
 
 # Копируем конфиги
 COPY nginx.conf /etc/nginx/sites-available/default
