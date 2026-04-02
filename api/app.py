@@ -10,8 +10,13 @@ CORS(app)
 
 # HuggingFace настройки
 HF_TOKEN = os.environ.get("HF_TOKEN", "")
-# Используем бесплатную модель через chat completions API
-HF_MODEL = os.environ.get("HF_MODEL", "HuggingFaceH4/zephyr-7b-beta")
+# Бесплатные модели с поддержкой chat completion (по приоритету)
+CHAT_MODELS = [
+    "HuggingFaceH4/zephyr-7b-beta",
+    "mistralai/Mixtral-8x7B-Instruct-v0.1",
+    "microsoft/Phi-3-mini-4k-instruct",
+]
+HF_MODEL = os.environ.get("HF_MODEL", CHAT_MODELS[0])
 
 # MySQL настройки (из переменных окружения)
 DB_HOST = os.environ.get("DB_HOST", "")
@@ -97,24 +102,36 @@ def recommend():
     system_prompt = build_system_prompt(menu_items)
 
     try:
-        client = InferenceClient(
-            model=HF_MODEL,
-            token=HF_TOKEN if HF_TOKEN else None
-        )
-
+        token = HF_TOKEN if HF_TOKEN else None
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message}
         ]
 
-        response = client.chat_completion(
-            messages=messages,
-            max_tokens=512,
-            temperature=0.7,
-        )
+        # Пробуем модели по очереди
+        models_to_try = [HF_MODEL] + [m for m in CHAT_MODELS if m != HF_MODEL]
+        response_text = None
+        last_error = None
 
-        response_text = response.choices[0].message.content.strip()
-        print(f"HF ответ: {response_text}")
+        for model in models_to_try:
+            try:
+                print(f"Пробуем модель: {model}")
+                client = InferenceClient(model=model, token=token)
+                response = client.chat_completion(
+                    messages=messages,
+                    max_tokens=512,
+                    temperature=0.7,
+                )
+                response_text = response.choices[0].message.content.strip()
+                print(f"HF ответ ({model}): {response_text}")
+                break
+            except Exception as model_err:
+                last_error = model_err
+                print(f"Модель {model} не сработала: {model_err}")
+                continue
+
+        if response_text is None:
+            raise last_error or Exception("Все модели недоступны")
 
         # Извлекаем ID рекомендованных блюд из ответа
         recommended_ids = []
@@ -165,17 +182,16 @@ def recommend():
 @app.route("/api/health", methods=["GET"])
 def health():
     """Проверка здоровья + диагностика."""
+    token = HF_TOKEN if HF_TOKEN else None
     status = {"status": "ok", "hf_model": HF_MODEL, "hf_token_set": bool(HF_TOKEN), "db_host_set": bool(DB_HOST)}
-    # Проверяем HF
-    try:
-        client = InferenceClient(model=HF_MODEL, token=HF_TOKEN if HF_TOKEN else None)
-        test = client.chat_completion(
-            messages=[{"role": "user", "content": "Привет"}],
-            max_tokens=10
-        )
-        status["hf_status"] = "ok"
-    except Exception as e:
-        status["hf_status"] = f"error: {str(e)}"
+    # Проверяем каждую модель
+    for model in CHAT_MODELS:
+        try:
+            client = InferenceClient(model=model, token=token)
+            client.chat_completion(messages=[{"role": "user", "content": "Привет"}], max_tokens=10)
+            status[f"model_{model}"] = "ok"
+        except Exception as e:
+            status[f"model_{model}"] = f"error: {str(e)}"
     return jsonify(status)
 
 

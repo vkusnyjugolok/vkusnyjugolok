@@ -183,11 +183,14 @@ include 'includes/db_connect.php';
 
                 removeLoading();
 
+                const data = await response.json();
+
                 if (!response.ok) {
-                    throw new Error('Ошибка сервера');
+                    console.error('Ответ сервера (ошибка):', JSON.stringify(data, null, 2));
+                    throw new Error(data.message || 'Ошибка сервера: ' + response.status);
                 }
 
-                const data = await response.json();
+                console.log('Ответ сервера:', JSON.stringify(data, null, 2));
                 addMessage(data.message || 'Не удалось получить рекомендации.', false);
 
                 if (data.recommendations && data.recommendations.length > 0) {
@@ -195,7 +198,7 @@ include 'includes/db_connect.php';
                 }
             } catch (err) {
                 removeLoading();
-                addMessage('Произошла ошибка при обработке запроса. Проверьте подключение и попробуйте снова.', false);
+                addMessage('Ошибка: ' + err.message, false);
                 console.error(err);
             } finally {
                 sendBtn.disabled = false;
