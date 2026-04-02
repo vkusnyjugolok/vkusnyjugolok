@@ -11,12 +11,8 @@ CORS(app)
 # HuggingFace настройки
 HF_TOKEN = os.environ.get("HF_TOKEN", "")
 # Бесплатные модели с поддержкой chat completion (по приоритету)
-CHAT_MODELS = [
-    "HuggingFaceH4/zephyr-7b-beta",
-    "mistralai/Mixtral-8x7B-Instruct-v0.1",
-    "microsoft/Phi-3-mini-4k-instruct",
-]
-HF_MODEL = os.environ.get("HF_MODEL", CHAT_MODELS[0])
+
+HF_MODEL = os.environ.get("HF_MODEL", 'Qwen/Qwen2.5-72B-Instruct')
 
 # MySQL настройки (из переменных окружения)
 DB_HOST = os.environ.get("DB_HOST", "")
