@@ -23,3 +23,11 @@
         </div>
     </nav>
 </header>
+
+<script>
+  // Не даём сервису засыпать пока пользователь на странице
+  setInterval(function() {
+    fetch('/index.php', { method: 'HEAD' })
+      .catch(function() {}); // тихо игнорируем ошибки
+  }, 20000); // каждые 20 секунд
+</script>
