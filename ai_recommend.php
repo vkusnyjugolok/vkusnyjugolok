@@ -78,133 +78,154 @@ include 'includes/db_connect.php';
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // API на том же сервере через nginx proxy
-        const API_URL = '/api/recommend';
+const API_URL = '/api/recommend';
 
-        const chatMessages = document.getElementById('chatMessages');
-        const chatForm = document.getElementById('chatForm');
-        const userMessageInput = document.getElementById('userMessage');
-        const sendBtn = document.getElementById('sendBtn');
+const chatMessages = document.getElementById('chatMessages');
+const chatForm = document.getElementById('chatForm');
+const userMessageInput = document.getElementById('userMessage');
+const sendBtn = document.getElementById('sendBtn');
 
-        function setQuery(text) {
-            userMessageInput.value = text;
-            userMessageInput.focus();
-        }
+// ✅ ХРАНИМ ИСТОРИЮ
+let conversation = [];
 
-        function addMessage(text, isUser) {
-            const div = document.createElement('div');
-            div.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+function setQuery(text) {
+    userMessageInput.value = text;
+    userMessageInput.focus();
+}
 
-            const avatar = document.createElement('div');
-            avatar.className = 'message-avatar';
-            avatar.innerHTML = isUser ? '<i class="bi bi-person-fill"></i>' : '<i class="bi bi-robot"></i>';
+function addMessage(text, isUser) {
+    const div = document.createElement('div');
+    div.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
 
-            const content = document.createElement('div');
-            content.className = 'message-content';
-            content.innerHTML = `<p>${escapeHtml(text)}</p>`;
+    const avatar = document.createElement('div');
+    avatar.className = 'message-avatar';
+    avatar.innerHTML = isUser 
+        ? '<i class="bi bi-person-fill"></i>' 
+        : '<i class="bi bi-robot"></i>';
 
-            div.appendChild(avatar);
-            div.appendChild(content);
-            chatMessages.appendChild(div);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
+    const content = document.createElement('div');
+    content.className = 'message-content';
+    content.innerHTML = `<p>${escapeHtml(text)}</p>`;
 
-        function addRecommendations(recommendations) {
-            if (!recommendations || recommendations.length === 0) return;
+    div.appendChild(avatar);
+    div.appendChild(content);
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
 
-            const div = document.createElement('div');
-            div.className = 'recommendations-grid';
+function addRecommendations(recommendations) {
+    if (!recommendations || recommendations.length === 0) return;
 
-            recommendations.forEach(item => {
-                const imgSrc = item.image || 'https://via.placeholder.com/300x200?text=Блюдо';
-                const price = parseFloat(item.price).toLocaleString('ru-RU');
-                div.innerHTML += `
-                    <a href="menu.php" class="rec-card">
-                        <img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(item.name)}" class="rec-img">
-                        <div class="rec-body">
-                            <h6 class="rec-title">${escapeHtml(item.name)}</h6>
-                            <p class="rec-desc">${escapeHtml(item.description || '')}</p>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="rec-price">${price} &#8381;</span>
-                                <span class="badge bg-coffee-cat">${escapeHtml(item.category || '')}</span>
-                            </div>
-                        </div>
-                    </a>
-                `;
-            });
+    const div = document.createElement('div');
+    div.className = 'recommendations-grid';
 
-            chatMessages.appendChild(div);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
+    recommendations.forEach(item => {
+        const imgSrc = item.image || 'https://via.placeholder.com/300x200?text=Блюдо';
+        const price = parseFloat(item.price).toLocaleString('ru-RU');
 
-        function addLoading() {
-            const div = document.createElement('div');
-            div.className = 'message bot-message loading-message';
-            div.id = 'loadingMsg';
-            div.innerHTML = `
-                <div class="message-avatar"><i class="bi bi-robot"></i></div>
-                <div class="message-content">
-                    <div class="typing-indicator">
-                        <span></span><span></span><span></span>
+        div.innerHTML += `
+            <a href="menu.php" class="rec-card">
+                <img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(item.name)}" class="rec-img">
+                <div class="rec-body">
+                    <h6 class="rec-title">${escapeHtml(item.name)}</h6>
+                    <p class="rec-desc">${escapeHtml(item.description || '')}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="rec-price">${price} &#8381;</span>
+                        <span class="badge bg-coffee-cat">${escapeHtml(item.category || '')}</span>
                     </div>
                 </div>
-            `;
-            chatMessages.appendChild(div);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
+            </a>
+        `;
+    });
 
-        function removeLoading() {
-            const el = document.getElementById('loadingMsg');
-            if (el) el.remove();
-        }
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
 
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
+function addLoading() {
+    const div = document.createElement('div');
+    div.className = 'message bot-message loading-message';
+    div.id = 'loadingMsg';
+    div.innerHTML = `
+        <div class="message-avatar"><i class="bi bi-robot"></i></div>
+        <div class="message-content">
+            <div class="typing-indicator">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+    `;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
 
-        chatForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const message = userMessageInput.value.trim();
-            if (!message) return;
+function removeLoading() {
+    const el = document.getElementById('loadingMsg');
+    if (el) el.remove();
+}
 
-            addMessage(message, true);
-            userMessageInput.value = '';
-            sendBtn.disabled = true;
-            addLoading();
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
 
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message })
-                });
+chatForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const message = userMessageInput.value.trim();
+    if (!message) return;
 
-                removeLoading();
+    // ✅ Добавляем в UI
+    addMessage(message, true);
 
-                const data = await response.json();
+    // ✅ Добавляем в историю
+    conversation.push({
+        role: "user",
+        content: message
+    });
 
-                if (!response.ok) {
-                    console.error('Ответ сервера (ошибка):', JSON.stringify(data, null, 2));
-                    throw new Error(data.message || 'Ошибка сервера: ' + response.status);
-                }
+    userMessageInput.value = '';
+    sendBtn.disabled = true;
+    addLoading();
 
-                console.log('Ответ сервера:', JSON.stringify(data, null, 2));
-                addMessage(data.message || 'Не удалось получить рекомендации.', false);
-
-                if (data.recommendations && data.recommendations.length > 0) {
-                    addRecommendations(data.recommendations);
-                }
-            } catch (err) {
-                removeLoading();
-                addMessage('Ошибка: ' + err.message, false);
-                console.error(err);
-            } finally {
-                sendBtn.disabled = false;
-                userMessageInput.focus();
-            }
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messages: conversation })
         });
-    </script>
+
+        removeLoading();
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || 'Ошибка сервера');
+        }
+
+        const botReply = data.message || "Не удалось получить рекомендации.";
+
+        // ✅ Добавляем ответ в UI
+        addMessage(botReply, false);
+
+        // ✅ Добавляем ответ в историю
+        conversation.push({
+            role: "assistant",
+            content: botReply
+        });
+
+        if (data.recommendations && data.recommendations.length > 0) {
+            addRecommendations(data.recommendations);
+        }
+
+    } catch (err) {
+        removeLoading();
+        addMessage('Ошибка: ' + err.message, false);
+        console.error(err);
+    } finally {
+        sendBtn.disabled = false;
+        userMessageInput.focus();
+    }
+});
+</script>
 </body>
 </html>
