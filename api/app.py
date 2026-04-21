@@ -22,16 +22,6 @@ DB_USER = os.environ.get("DB_USER", "")
 DB_PASS = os.environ.get("DB_PASS", "")
 
 # =============================
-# FALLBACK МЕНЮ
-# =============================
-
-FALLBACK_MENU = [
-    {"id": 1, "name": "Паста Карбонара", "description": "Классическая итальянская паста с беконом и сливочным соусом", "price": 450.0, "category": "Основные блюда", "image": ""},
-    {"id": 2, "name": "Тирамису", "description": "Нежный десерт с маскарпоне и кофе", "price": 250.0, "category": "Десерты", "image": ""},
-    {"id": 3, "name": "Латте", "description": "Кофе с молоком и пышной пенкой", "price": 150.0, "category": "Напитки", "image": ""}
-]
-
-# =============================
 # ПОЛУЧЕНИЕ МЕНЮ
 # =============================
 
@@ -62,13 +52,13 @@ def get_menu_from_db():
         return items if items else None
 
     except Exception as e:
-        print(f"БД недоступна: {e}")
+        print(f"Ошибка БД: {e}")
         return None
 
 
 def get_menu_items():
     db_menu = get_menu_from_db()
-    return db_menu if db_menu else FALLBACK_MENU
+    return db_menu if db_menu else []
 
 
 # =============================
@@ -86,41 +76,35 @@ def build_system_prompt(menu_items):
     return f"""
 Ты — дружелюбный ИИ-консультант кафе «Вкусный Уголок».
 
+Ты ведёшь диалог и обязан учитывать ВСЕ ранее указанные ограничения,
+аллергии, бюджет и предпочтения пользователя.
+
 =====================
 МЕНЮ:
 =====================
 {menu_text}
 
 =====================
-ВАЖНЫЕ ПРАВИЛА:
+ПРАВИЛА:
 =====================
 
-1. Рекомендуй ТОЛЬКО блюда из списка выше.
-2. Если пользователь просит конкретный ингредиент —
-   он должен ЯВНО присутствовать в названии или описании.
-3. Нельзя додумывать состав.
-4. Если ингредиент не указан — блюдо не подходит.
-5. При аллергиях строго исключай запрещённые ингредиенты.
-6. Если подходящих блюд нет — честно скажи об этом.
-7. Не придумывай новые блюда.
-8. Не копируй описание дословно — перефразируй.
-9. Строка "РЕКОМЕНДУЮ_ID:" служебная — не объясняй её.
+1. Рекомендуй ТОЛЬКО блюда из меню.
+2. Если пользователь указал аллергию — учитывай её во всех следующих ответах.
+3. Если ингредиент явно не указан в описании — считать, что его нет.
+4. Нельзя придумывать состав.
+5. При ограничении бюджета — считай сумму.
+6. Если ничего не подходит — честно сообщи об этом.
+7. Не копируй описание дословно — перефразируй.
+8. "РЕКОМЕНДУЮ_ID:" — служебная строка, не объясняй её.
 
 =====================
-СТИЛЬ ОТВЕТА:
+СТИЛЬ:
 =====================
 
-- Отвечай естественно, как официант.
-- Начни с короткой живой фразы.
-- Затем предложи блюдо и объясни, почему оно подходит.
-- 3–5 предложений.
-- Не сухой каталог.
-- Не слишком длинно.
-
-Пример:
-
-Если хочется блюда с курицей, могу предложить «Цезарь с курицей» за 350 руб. 
-Это лёгкий и сытный салат с нежной курицей и хрустящими сухариками — отличный вариант для обеда.
+Отвечай живо, как официант.
+3–5 предложений.
+Не сухо.
+Не слишком длинно.
 
 =====================
 ФОРМАТ:
@@ -137,19 +121,20 @@ def build_system_prompt(menu_items):
 
 
 # =============================
-# API РЕКОМЕНДАЦИИ
+# API
 # =============================
 
 @app.route("/api/recommend", methods=["POST"])
 def recommend():
     data = request.get_json()
 
-    if not data or "message" not in data:
-        return jsonify({"error": "Поле 'message' обязательно"}), 400
+    if not data or "messages" not in data:
+        return jsonify({"error": "Поле 'messages' обязательно"}), 400
 
-    user_message = data["message"].strip()
-    if not user_message:
-        return jsonify({"error": "Сообщение не может быть пустым"}), 400
+    conversation = data["messages"]
+
+    if not isinstance(conversation, list) or len(conversation) == 0:
+        return jsonify({"error": "messages должен быть непустым массивом"}), 400
 
     menu_items = get_menu_items()
     system_prompt = build_system_prompt(menu_items)
@@ -161,13 +146,12 @@ def recommend():
             timeout=60
         )
 
+        hf_messages = [{"role": "system", "content": system_prompt}] + conversation
+
         response = client.chat_completion(
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message}
-            ],
+            messages=hf_messages,
             max_tokens=512,
-            temperature=0.3  # сбалансированная человечность
+            temperature=0.3
         )
 
         response_text = response.choices[0].message.content.strip()
@@ -187,7 +171,7 @@ def recommend():
                 if id_str.isdigit() and int(id_str) > 0:
                     recommended_ids.append(int(id_str))
 
-        # Удаляем служебную строку полностью
+        # Удаляем служебную строку
         clean_message = re.sub(r"РЕКОМЕНДУЮ_ID:.*", "", response_text).strip()
 
         recommendations = [
@@ -209,7 +193,7 @@ def recommend():
 
 
 # =============================
-# HEALTH CHECK
+# HEALTH
 # =============================
 
 @app.route("/api/health", methods=["GET"])
