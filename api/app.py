@@ -1,7 +1,6 @@
 import os
 import traceback
 import re
-import json
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from huggingface_hub import InferenceClient
@@ -21,12 +20,6 @@ DB_PORT = 23176
 DB_NAME = os.environ.get("DB_NAME", "defaultdb")
 DB_USER = os.environ.get("DB_USER", "")
 DB_PASS = os.environ.get("DB_PASS", "")
-
-# =============================
-# КЭШ СОСТАВОВ
-# =============================
-
-_ingredients_cache = {}
 
 # =============================
 # ОЧИСТКА DEEPSEEK
@@ -78,91 +71,16 @@ def get_menu_items():
 
 
 # =============================
-# ГЕНЕРАЦИЯ СОСТАВОВ ЧЕРЕЗ ИИ
-# =============================
-
-def generate_ingredients_for_menu(menu_items):
-    if not menu_items:
-        return {}
-
-    client = InferenceClient(
-        model=HF_MODEL,
-        token=HF_TOKEN if HF_TOKEN else None,
-        timeout=120
-    )
-
-    dishes_list = "\n".join([
-        f"- {item['name']}: {item['description']}"
-        for item in menu_items
-    ])
-
-    prompt = f"""Respond with ONLY a JSON object. No thinking, no explanation, no markdown.
-
-For each dish list its typical ingredients in Russian.
-
-Dishes:
-{dishes_list}
-
-Required format (pure JSON only):
-{{
-  "Паста Карбонара": "спагетти, бекон, яйца, пармезан, сливки",
-  "Тирамису": "маскарпоне, яйца, кофе, савоярди, какао"
-}}"""
-
-    try:
-        response = client.chat_completion(
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=2048,
-            temperature=0.1
-        )
-
-        text = response.choices[0].message.content.strip()
-
-        # Убираем <think> блок DeepSeek
-        text = clean_deepseek_response(text)
-
-        # Убираем markdown
-        text = re.sub(r"```json|```", "", text).strip()
-
-        # Ищем JSON даже если модель добавила текст вокруг
-        json_match = re.search(r"\{.*\}", text, re.DOTALL)
-        if json_match:
-            text = json_match.group(0)
-
-        ingredients = json.loads(text)
-        print("✅ Составы сгенерированы:", list(ingredients.keys()))
-        return ingredients
-
-    except Exception as e:
-        print(f"❌ Ошибка генерации составов: {e}")
-        print(f"Ответ модели: {text if 'text' in locals() else 'нет ответа'}")
-        return {}
-
-
-def get_or_generate_ingredients(menu_items):
-    global _ingredients_cache
-
-    if not _ingredients_cache:
-        print("🔄 Генерируем составы блюд...")
-        _ingredients_cache = generate_ingredients_for_menu(menu_items)
-
-    return _ingredients_cache
-
-
-# =============================
 # ПРОМПТ
 # =============================
 
 def build_system_prompt(menu_items):
-    ingredients_map = get_or_generate_ingredients(menu_items)
-
     menu_text = ""
     for item in menu_items:
-        ingredients = ingredients_map.get(item['name'], "состав не определён")
         menu_text += (
             f"[{item['id']}] {item['name']} | "
             f"{item['category']} | "
-            f"Состав: {ingredients} | "
+            f"{item['description']} | "
             f"{item['price']} руб.\n"
         )
 
@@ -194,12 +112,12 @@ def build_system_prompt(menu_items):
 ==================================
 ПРОВЕРКА АЛЛЕРГЕНОВ:
 ==================================
-Перед рекомендацией проверь строку "Состав:" каждого блюда.
-Если хоть один ингредиент относится к запрещённой группе — блюдо ЗАПРЕЩЕНО.
+Перед рекомендацией проверь название и описание каждого блюда.
+Если блюдо ТИПИЧНО содержит запрещённый продукт — оно ЗАПРЕЩЕНО.
 
 Молочная группа: молоко, сливки, сыр, фета, творог, йогурт,
 сметана, масло сливочное, моцарелла, пармезан, маскарпоне,
-рикотта, крем-чиз, бри, горгонзола
+рикотта, крем-чиз, латте, капучино
 
 Глютен: мука, паста, спагетти, хлеб, пшеница, тесто,
 сухарики, савоярди, булочка
@@ -221,7 +139,7 @@ def build_system_prompt(menu_items):
 Пиши ТОЛЬКО название блюда и краткое описание своими словами.
 
 ==================================
-ФОРМАТ:
+ФОРМАТ ОТВЕТА:
 ==================================
 
 Текст рекомендации.
@@ -257,7 +175,7 @@ def recommend():
         client = InferenceClient(
             model=HF_MODEL,
             token=HF_TOKEN if HF_TOKEN else None,
-            timeout=120
+            timeout=180
         )
 
         hf_messages = [{"role": "system", "content": system_prompt}] + conversation
@@ -292,7 +210,7 @@ def recommend():
         clean_message = re.sub(r"РЕКОМЕНДУЮ_ID:.*", "", response_text).strip()
 
         # =============================
-        # PYTHON ПОСТ-ФИЛЬТРАЦИЯ
+        # ПОСТ-ФИЛЬТРАЦИЯ
         # =============================
 
         ALLERGEN_TRIGGERS = {
@@ -312,8 +230,6 @@ def recommend():
             "рыб":    ["лосось", "тунец", "треска", "сёмга", "форель", "анчоус"],
         }
 
-        ingredients_map = get_or_generate_ingredients(menu_items)
-
         # Собираем всю историю пользователя
         all_user_text = " ".join(
             m["content"] for m in conversation if m["role"] == "user"
@@ -332,8 +248,9 @@ def recommend():
                 continue
 
             if forbidden_ingredients:
-                item_ingredients = ingredients_map.get(item['name'], "").lower()
-                item_text = (item['name'] + " " + item_ingredients).lower()
+                item_text = (
+                    item['name'] + " " + (item.get('description') or "")
+                ).lower()
 
                 if any(w in item_text for w in forbidden_ingredients):
                     print(f"⚠️ Пост-фильтр убрал: {item['name']}")
@@ -355,19 +272,6 @@ def recommend():
 
 
 # =============================
-# ОБНОВЛЕНИЕ КЭША
-# =============================
-
-@app.route("/api/refresh-ingredients", methods=["POST"])
-def refresh_ingredients():
-    global _ingredients_cache
-    _ingredients_cache = {}
-    menu = get_menu_items()
-    get_or_generate_ingredients(menu)
-    return jsonify({"status": "ok", "count": len(_ingredients_cache)})
-
-
-# =============================
 # HEALTH
 # =============================
 
@@ -377,8 +281,7 @@ def health():
         "status": "ok",
         "hf_model": HF_MODEL,
         "hf_token_set": bool(HF_TOKEN),
-        "db_host_set": bool(DB_HOST),
-        "ingredients_cached": len(_ingredients_cache)
+        "db_host_set": bool(DB_HOST)
     })
 
 
@@ -387,13 +290,5 @@ def health():
 # =============================
 
 if __name__ == "__main__":
-    print("🚀 Запуск сервера...")
-
-    menu = get_menu_items()
-    if menu:
-        get_or_generate_ingredients(menu)
-    else:
-        print("⚠️ Меню пустое, составы не сгенерированы")
-
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
