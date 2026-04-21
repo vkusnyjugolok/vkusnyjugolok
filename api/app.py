@@ -14,7 +14,7 @@ CORS(app)
 # =============================
 
 HF_TOKEN = os.environ.get("HF_TOKEN", "")
-HF_MODEL = os.environ.get("HF_MODEL", "meta-llama/Llama-3.2-3B-Instruct")
+HF_MODEL = os.environ.get("HF_MODEL", "deepseek-ai/DeepSeek-R1")
 
 DB_HOST = os.environ.get("DB_HOST", "")
 DB_PORT = 23176
@@ -27,6 +27,15 @@ DB_PASS = os.environ.get("DB_PASS", "")
 # =============================
 
 _ingredients_cache = {}
+
+# =============================
+# ОЧИСТКА DEEPSEEK
+# =============================
+
+def clean_deepseek_response(text):
+    """Убираем блок размышлений DeepSeek-R1"""
+    text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+    return text.strip()
 
 # =============================
 # ПОЛУЧЕНИЕ МЕНЮ
@@ -79,7 +88,7 @@ def generate_ingredients_for_menu(menu_items):
     client = InferenceClient(
         model=HF_MODEL,
         token=HF_TOKEN if HF_TOKEN else None,
-        timeout=60
+        timeout=120
     )
 
     dishes_list = "\n".join([
@@ -87,33 +96,46 @@ def generate_ingredients_for_menu(menu_items):
         for item in menu_items
     ])
 
-    prompt = f"""Для каждого блюда перечисли его типичные ингредиенты.
-Отвечай ТОЛЬКО в формате JSON, без пояснений, без markdown, без текста до или после.
+    prompt = f"""Respond with ONLY a JSON object. No thinking, no explanation, no markdown.
 
-Блюда:
+For each dish list its typical ingredients in Russian.
+
+Dishes:
 {dishes_list}
 
-Формат ответа:
+Required format (pure JSON only):
 {{
-  "Название блюда": "ингредиент1, ингредиент2, ингредиент3"
+  "Паста Карбонара": "спагетти, бекон, яйца, пармезан, сливки",
+  "Тирамису": "маскарпоне, яйца, кофе, савоярди, какао"
 }}"""
 
     try:
         response = client.chat_completion(
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=1024,
+            max_tokens=2048,
             temperature=0.1
         )
 
         text = response.choices[0].message.content.strip()
+
+        # Убираем <think> блок DeepSeek
+        text = clean_deepseek_response(text)
+
+        # Убираем markdown
         text = re.sub(r"```json|```", "", text).strip()
 
+        # Ищем JSON даже если модель добавила текст вокруг
+        json_match = re.search(r"\{.*\}", text, re.DOTALL)
+        if json_match:
+            text = json_match.group(0)
+
         ingredients = json.loads(text)
-        print("✅ Составы сгенерированы для блюд:", list(ingredients.keys()))
+        print("✅ Составы сгенерированы:", list(ingredients.keys()))
         return ingredients
 
     except Exception as e:
         print(f"❌ Ошибка генерации составов: {e}")
+        print(f"Ответ модели: {text if 'text' in locals() else 'нет ответа'}")
         return {}
 
 
@@ -165,7 +187,9 @@ def build_system_prompt(menu_items):
 4. НИКОГДА не перечисляй неподходящие блюда.
 5. НИКОГДА не объясняй почему что-то не подходит — молча игнорируй.
 6. Нельзя упоминать ID в тексте ответа.
-7. Если ничего не подходит — честно скажи об этом.
+7. Нельзя показывать состав, цену или категорию в тексте ответа.
+8. Нельзя писать "заменить", "убрать", "без X".
+9. Если ничего не подходит — честно скажи об этом.
 
 ==================================
 ПРОВЕРКА АЛЛЕРГЕНОВ:
@@ -194,6 +218,7 @@ def build_system_prompt(menu_items):
 Дружелюбно, естественно.
 2–3 предложения.
 Без технических пояснений.
+Пиши ТОЛЬКО название блюда и краткое описание своими словами.
 
 ==================================
 ФОРМАТ:
@@ -232,18 +257,22 @@ def recommend():
         client = InferenceClient(
             model=HF_MODEL,
             token=HF_TOKEN if HF_TOKEN else None,
-            timeout=60
+            timeout=120
         )
 
         hf_messages = [{"role": "system", "content": system_prompt}] + conversation
 
         response = client.chat_completion(
             messages=hf_messages,
-            max_tokens=512,
+            max_tokens=2048,
             temperature=0.3
         )
 
         response_text = response.choices[0].message.content.strip()
+
+        # Убираем <think> блок DeepSeek
+        response_text = clean_deepseek_response(response_text)
+
         print("HF ответ:", response_text)
 
         # =============================
@@ -266,31 +295,36 @@ def recommend():
         # PYTHON ПОСТ-ФИЛЬТРАЦИЯ
         # =============================
 
-        ALLERGEN_MAP = {
-            "молок": [
-                "молоко", "сливки", "сыр", "фета", "творог", "йогурт",
-                "сметана", "масло сливочное", "моцарелла", "пармезан",
-                "маскарпоне", "рикотта", "крем-чиз", "латте", "капучино"
-            ],
-            "глютен": [
-                "паста", "спагетти", "хлеб", "мука", "пшениц",
-                "сухарики", "савоярди", "булочка", "тесто"
-            ],
-            "яиц": ["яйц", "омлет", "майонез", "меренг"],
-            "орех": ["орех", "миндаль", "арахис", "фундук", "кешью"],
-            "рыб": ["лосось", "тунец", "треска", "сёмга", "форель", "анчоус"],
+        ALLERGEN_TRIGGERS = {
+            "молочн": ["молоко", "сливки", "сыр", "фета", "творог", "йогурт",
+                       "сметана", "масло сливочное", "моцарелла", "пармезан",
+                       "маскарпоне", "рикотта", "крем-чиз", "латте", "капучино"],
+            "молок":  ["молоко", "сливки", "сыр", "фета", "творог", "йогурт",
+                       "сметана", "масло сливочное", "моцарелла", "пармезан",
+                       "маскарпоне", "рикотта", "крем-чиз", "латте", "капучино"],
+            "лактоз": ["молоко", "сливки", "сыр", "фета", "творог", "йогурт",
+                       "сметана", "масло сливочное", "моцарелла", "пармезан",
+                       "маскарпоне", "рикотта", "крем-чиз", "латте", "капучино"],
+            "глютен": ["паста", "спагетти", "хлеб", "мука", "пшениц",
+                       "сухарики", "савоярди", "булочка", "тесто"],
+            "яиц":    ["яйц", "омлет", "майонез", "меренг"],
+            "орех":   ["орех", "миндаль", "арахис", "фундук", "кешью"],
+            "рыб":    ["лосось", "тунец", "треска", "сёмга", "форель", "анчоус"],
         }
 
         ingredients_map = get_or_generate_ingredients(menu_items)
 
-        last_user_msg = next(
-            (m["content"] for m in reversed(conversation) if m["role"] == "user"), ""
+        # Собираем всю историю пользователя
+        all_user_text = " ".join(
+            m["content"] for m in conversation if m["role"] == "user"
         ).lower()
 
         forbidden_ingredients = []
-        for trigger, words in ALLERGEN_MAP.items():
-            if trigger in last_user_msg:
+        for trigger, words in ALLERGEN_TRIGGERS.items():
+            if trigger in all_user_text:
                 forbidden_ingredients.extend(words)
+
+        forbidden_ingredients = list(set(forbidden_ingredients))
 
         recommendations = []
         for item in menu_items:
