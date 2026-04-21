@@ -1,5 +1,4 @@
 import os
-import json
 import traceback
 import re
 from flask import Flask, request, jsonify
@@ -9,23 +8,32 @@ from huggingface_hub import InferenceClient
 app = Flask(__name__)
 CORS(app)
 
-# HuggingFace настройки
+# =============================
+# НАСТРОЙКИ
+# =============================
+
 HF_TOKEN = os.environ.get("HF_TOKEN", "")
 HF_MODEL = os.environ.get("HF_MODEL", "meta-llama/Llama-3.2-3B-Instruct")
 
-# MySQL настройки
 DB_HOST = os.environ.get("DB_HOST", "")
 DB_PORT = 23176
 DB_NAME = os.environ.get("DB_NAME", "defaultdb")
 DB_USER = os.environ.get("DB_USER", "")
 DB_PASS = os.environ.get("DB_PASS", "")
 
-# Локальное меню fallback
+# =============================
+# FALLBACK МЕНЮ
+# =============================
+
 FALLBACK_MENU = [
     {"id": 1, "name": "Паста Карбонара", "description": "Классическая итальянская паста с беконом и сливочным соусом", "price": 450.0, "category": "Основные блюда", "image": ""},
     {"id": 2, "name": "Тирамису", "description": "Нежный десерт с маскарпоне и кофе", "price": 250.0, "category": "Десерты", "image": ""},
-    {"id": 3, "name": "Латте", "description": "Кофе с молоком и пышной пенкой", "price": 150.0, "category": "Напитки", "image": ""},
+    {"id": 3, "name": "Латте", "description": "Кофе с молоком и пышной пенкой", "price": 150.0, "category": "Напитки", "image": ""}
 ]
+
+# =============================
+# ПОЛУЧЕНИЕ МЕНЮ
+# =============================
 
 def get_menu_from_db():
     if not DB_HOST:
@@ -47,17 +55,25 @@ def get_menu_from_db():
         items = cursor.fetchall()
         cursor.close()
         conn.close()
+
         for item in items:
             item["price"] = float(item["price"])
+
         return items if items else None
+
     except Exception as e:
         print(f"БД недоступна: {e}")
         return None
+
 
 def get_menu_items():
     db_menu = get_menu_from_db()
     return db_menu if db_menu else FALLBACK_MENU
 
+
+# =============================
+# ПРОМПТ
+# =============================
 
 def build_system_prompt(menu_items):
     menu_text = ""
@@ -68,7 +84,7 @@ def build_system_prompt(menu_items):
         )
 
     return f"""
-Ты — профессиональный ИИ-консультант кафе «Вкусный Уголок».
+Ты — дружелюбный ИИ-консультант кафе «Вкусный Уголок».
 
 =====================
 МЕНЮ:
@@ -76,36 +92,58 @@ def build_system_prompt(menu_items):
 {menu_text}
 
 =====================
-СТРОГИЕ ПРАВИЛА:
+ВАЖНЫЕ ПРАВИЛА:
 =====================
 
 1. Рекомендуй ТОЛЬКО блюда из списка выше.
 2. Если пользователь просит конкретный ингредиент —
-   проверяй его наличие в названии или описании.
+   он должен ЯВНО присутствовать в названии или описании.
 3. Нельзя додумывать состав.
-4. Если ингредиент явно не указан — блюдо не подходит.
-5. Если подходящих блюд нет — честно скажи об этом.
-6. Отвечай кратко и дружелюбно.
-7. Строка "РЕКОМЕНДУЮ_ID:" — служебная. Не объясняй её.
+4. Если ингредиент не указан — блюдо не подходит.
+5. При аллергиях строго исключай запрещённые ингредиенты.
+6. Если подходящих блюд нет — честно скажи об этом.
+7. Не придумывай новые блюда.
+8. Не копируй описание дословно — перефразируй.
+9. Строка "РЕКОМЕНДУЮ_ID:" служебная — не объясняй её.
 
+=====================
+СТИЛЬ ОТВЕТА:
+=====================
+
+- Отвечай естественно, как официант.
+- Начни с короткой живой фразы.
+- Затем предложи блюдо и объясни, почему оно подходит.
+- 3–5 предложений.
+- Не сухой каталог.
+- Не слишком длинно.
+
+Пример:
+
+Если хочется блюда с курицей, могу предложить «Цезарь с курицей» за 350 руб. 
+Это лёгкий и сытный салат с нежной курицей и хрустящими сухариками — отличный вариант для обеда.
+
+=====================
 ФОРМАТ:
+=====================
 
-Название — цена  
-Короткое объяснение  
+В конце ОБЯЗАТЕЛЬНО добавь:
 
-В конце обязательно:
+РЕКОМЕНДУЮ_ID: 1,2
 
-РЕКОМЕНДУЮ_ID: 1,2,3
-
-Если ничего нет:
+Если ничего не подходит:
 
 РЕКОМЕНДУЮ_ID: 0
 """
 
 
+# =============================
+# API РЕКОМЕНДАЦИИ
+# =============================
+
 @app.route("/api/recommend", methods=["POST"])
 def recommend():
     data = request.get_json()
+
     if not data or "message" not in data:
         return jsonify({"error": "Поле 'message' обязательно"}), 400
 
@@ -129,15 +167,18 @@ def recommend():
                 {"role": "user", "content": user_message}
             ],
             max_tokens=512,
-            temperature=0.2  # снижена для логичности
+            temperature=0.3  # сбалансированная человечность
         )
 
         response_text = response.choices[0].message.content.strip()
         print("HF ответ:", response_text)
 
+        # =============================
+        # ИЗВЛЕЧЕНИЕ ID
+        # =============================
+
         recommended_ids = []
 
-        # Извлекаем ID
         match = re.search(r"РЕКОМЕНДУЮ_ID:\s*([0-9,\s]+)", response_text)
         if match:
             ids_str = match.group(1)
@@ -167,6 +208,10 @@ def recommend():
         }), 500
 
 
+# =============================
+# HEALTH CHECK
+# =============================
+
 @app.route("/api/health", methods=["GET"])
 def health():
     return jsonify({
@@ -176,6 +221,10 @@ def health():
         "db_host_set": bool(DB_HOST)
     })
 
+
+# =============================
+# ЗАПУСК
+# =============================
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
