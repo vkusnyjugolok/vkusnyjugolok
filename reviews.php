@@ -97,7 +97,7 @@ $where = [$statusWhere];
 $params = [];
 
 if ($ratingFilter >= 1 && $ratingFilter <= 5) {
-    $where[] = "rating = ?";
+    $where[] = "rating >= ?";
     $params[] = $ratingFilter;
 }
 

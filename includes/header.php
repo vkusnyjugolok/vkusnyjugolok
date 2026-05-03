@@ -17,7 +17,7 @@
                     <a class="nav-link" href="booking.php">Бронирование</a>
                     <a class="nav-link" href="contacts.php">Контакты</a>
                     <a class="nav-link" href="events.php">Акции и события</a>
-                    <a class="nav-link" href="ai_recommend.php"><i class="bi bi-robot"></i> ИИ-подбор</a>
+                    <a class="nav-link" href="ai_recommend.php"><i class="bi bi-robot"></i> Онлайн-официант</a>
                 </div>
             </div>
         </div>
