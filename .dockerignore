@@ -3,3 +3,6 @@
 *.md
 Dockerfile
 .dockerignore
+cafe_db.sql
+1.txt
+*.sql

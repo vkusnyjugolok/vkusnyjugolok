@@ -19,8 +19,8 @@ session_start();
     <section class="contact-section">
         <h2>Контакты</h2>
         <div class="contact-info mb-4">
-            <p>Адрес: ул. Центральная, 10, Москва</p>
-            <p>Телефон: +7 (495) 123-45-67</p>
+            <p>Адрес: Красная площадь, 6, Курск</p>
+            <p>Телефон: +7 (4712) 123-45-67</p>
             <p>Email: info@vkusnyugolok.ru</p>
             <p>Часы работы: Пн-Вс 9:00-22:00</p>
         </div>
@@ -28,7 +28,7 @@ session_start();
         <div class="map-wrapper mb-5">
             <!-- Яндекс.Карта вместо Google Maps -->
             <iframe
-                src="https://yandex.ru/map-widget/v1/?ll=37.6173%2C55.7558&z=14&mode=search&text=%D1%83%D0%BB.%20%D0%A6%D0%B5%D0%BD%D1%82%D1%80%D0%B0%D0%BB%D1%8C%D0%BD%D0%B0%D1%8F%2C%2010%2C%20%D0%9C%D0%BE%D1%81%D0%BA%D0%B2%D0%B0"
+                src="https://yandex.ru/map-widget/v1/?ll=36.1874%2C51.7373&z=16&mode=search&text=%D0%9A%D1%83%D1%80%D1%81%D0%BA%2C%20%D0%9A%D1%80%D0%B0%D1%81%D0%BD%D0%B0%D1%8F%20%D0%BF%D0%BB%D0%BE%D1%89%D0%B0%D0%B4%D1%8C%2C%206"
                 width="100%" height="400" frameborder="0"
                 allowfullscreen
                 style="border:0;"
