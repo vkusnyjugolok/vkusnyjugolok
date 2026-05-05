@@ -27,15 +27,20 @@ if (isset($_POST['login'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Кафе Вкусный Уголок - Вход в админ-панель</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="css/index.css" rel="stylesheet">
     <link href="css/login.css" rel="stylesheet">
 </head>
 <body>
     <?php include 'includes/header.php'; ?>
 
-    <main class="container my-5">
-        <div class="login-container">
-            <h2>Вход в админ-панель</h2>
-            <?php if (isset($error)) echo '<p class="text-danger">' . htmlspecialchars($error) . '</p>'; ?>
+    <main class="login-wrapper">
+        <div class="login-card">
+            <h2><i class="bi bi-cup-hot me-2"></i>Вход</h2>
+            <?php if (isset($error)): ?>
+                <div class="alert alert-danger py-2"><?= htmlspecialchars($error) ?></div>
+            <?php endif; ?>
             <form method="POST">
                 <div class="mb-3">
                     <label for="username" class="form-label">Логин</label>
@@ -45,7 +50,7 @@ if (isset($_POST['login'])) {
                     <label for="password" class="form-label">Пароль</label>
                     <input type="password" name="password" id="password" class="form-control" required>
                 </div>
-                <button type="submit" name="login" class="btn btn-primary w-100">Войти</button>
+                <button type="submit" name="login" class="btn btn-coffee w-100">Войти</button>
             </form>
         </div>
     </main>

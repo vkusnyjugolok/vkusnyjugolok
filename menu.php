@@ -16,7 +16,9 @@ while ($dish = $stmt->fetch()) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Кафе Вкусный Уголок - Меню</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="css/menu.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="css/index.css" rel="stylesheet">
 </head>
 <body>
     <?php include 'includes/header.php'; ?>

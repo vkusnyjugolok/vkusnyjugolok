@@ -147,7 +147,6 @@ function stars(int $n): string {
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <!-- Styles -->
     <link href="css/index.css" rel="stylesheet" />
-    <link href="css/reviews.css" rel="stylesheet" />
 </head>
 <!-- sticky footer: body — flex-колонка, main — flex-grow -->
 <body class="d-flex flex-column min-vh-100">
