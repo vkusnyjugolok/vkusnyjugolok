@@ -12,6 +12,8 @@
 .site-title {
     font-size: 2rem;
     font-weight: 700;
+    color: #fff !important;
+    text-shadow: 1px 1px 4px rgba(0,0,0,0.4);
 }
 
 /* Навигация */
