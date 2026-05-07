@@ -616,7 +616,7 @@ $statusColors = ['pending' => 'warning', 'confirmed' => 'success', 'cancelled' =
                 <td><?= (int)$cat['id'] ?></td>
                 <td>
                     <?php if ($editCatId === (int)$cat['id']): ?>
-                        <form method="POST" class="d-flex gap-2">
+                        <form method="POST" action="admin.php?section=categories" class="d-flex gap-2">
                             <input type="hidden" name="csrf" value="<?= sanitize($csrf) ?>">
                             <input type="hidden" name="cat_id" value="<?= (int)$cat['id'] ?>">
                             <input type="text" name="cat_name" value="<?= sanitize($cat['name']) ?>" class="form-control form-control-sm" maxlength="100" required>
